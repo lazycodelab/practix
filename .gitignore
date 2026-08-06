@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Exported progress files — these are personal, never commit them.
+12px-progress-*.json

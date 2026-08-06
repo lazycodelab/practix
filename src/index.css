@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+
+/* Change these five values and the whole app reskins. Phase accent colours
+   live in curriculum.md instead, since they belong to the content. */
+@theme {
+	--color-void: #14141f;
+	--color-panel: #1c1c2b;
+	--color-panel-soft: #181826;
+	--color-edge: #3a3a52;
+	--color-edge-soft: #2a2a3d;
+	--color-ink: #e8e3d3;
+
+	--font-pixel: 'Courier New', ui-monospace, monospace;
+}
+
+body {
+	background: var(--color-void);
+	color: var(--color-ink);
+	font-family: var(--font-pixel);
+}
+
+/* The dotted backdrop — one pixel every 16, like a canvas grid. */
+.pixel-grid {
+	background-color: var(--color-void);
+	background-image: radial-gradient(circle at 1px 1px, #1f1f30 1px, transparent 1px);
+	background-size: 16px 16px;
+}
+
+/* Notched corners, drawn with clip-path so no images are needed. */
+.pixel-panel {
+	background: var(--color-panel);
+	border: 3px solid var(--color-edge);
+	box-shadow:
+		inset 0 0 0 2px var(--color-void),
+		3px 3px 0 0 #0a0a12;
+	clip-path: polygon(
+		0 8px,
+		8px 8px,
+		8px 0,
+		calc(100% - 8px) 0,
+		calc(100% - 8px) 8px,
+		100% 8px,
+		100% calc(100% - 8px),
+		calc(100% - 8px) calc(100% - 8px),
+		calc(100% - 8px) 100%,
+		8px 100%,
+		8px calc(100% - 8px),
+		0 calc(100% - 8px)
+	);
+}
+
+/* Keyboard focus has to stay visible against the dark chrome. */
+:where(button, a, input, textarea, label[tabindex]):focus-visible {
+	outline: 2px solid var(--color-ink);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
