@@ -10,13 +10,37 @@
 	--color-edge-soft: #2a2a3d;
 	--color-ink: #e8e3d3;
 
-	--font-pixel: 'Courier New', ui-monospace, monospace;
+	/* Three roles, deliberately. Press Start 2P is an 8px bitmap face — superb
+	   as a logo, unreadable in bulk — so it is fenced to the wordmark alone.
+	   Silkscreen carries the chrome. Body prose stays monospace, because the
+	   curriculum's tips are the content and legibility beats theme there. */
+	--font-display: 'Press Start 2P', ui-monospace, monospace;
+	--font-pixel: 'Silkscreen', ui-monospace, monospace;
+	--font-body: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
 }
 
 body {
 	background: var(--color-void);
 	color: var(--color-ink);
+	font-family: var(--font-body);
+	-webkit-font-smoothing: none;
+	font-smooth: never;
+}
+
+/* Bitmap faces are drawn on a pixel grid; anti-aliasing them just makes them
+   blurry. Everything wearing a pixel font opts out of smoothing. */
+.font-pixel,
+.font-display {
+	-webkit-font-smoothing: none;
+	font-smooth: never;
+}
+
+.font-pixel {
 	font-family: var(--font-pixel);
+}
+
+.font-display {
+	font-family: var(--font-display);
 }
 
 /* The dotted backdrop — one pixel every 16, like a canvas grid. */

@@ -51,7 +51,7 @@ export function exportState(state) {
 	const url = URL.createObjectURL(blob)
 	const link = document.createElement('a')
 	link.href = url
-	link.download = `12px-progress-${stamp}.json`
+	link.download = `practix-progress-${stamp}.json`
 	document.body.appendChild(link)
 	link.click()
 	document.body.removeChild(link)
@@ -65,7 +65,7 @@ export function importState(file) {
 			try {
 				resolve(normalize(JSON.parse(String(reader.result))))
 			} catch {
-				reject(new Error('That file is not valid 12px progress JSON.'))
+				reject(new Error('That file is not valid Practix progress JSON.'))
 			}
 		}
 		reader.onerror = () => reject(new Error('Could not read that file.'))

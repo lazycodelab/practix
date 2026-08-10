@@ -2,10 +2,14 @@ import source from '../curriculum.md?raw'
 
 // Turns the human-editable curriculum.md into the shape the UI renders.
 //
-// Deliberately hand-rolled: the dialect is five line types, so a markdown
-// library would be more dependency than parser. Everything is forgiving —
-// unknown lines are skipped rather than throwing, because the person editing
-// curriculum.md is an artist, not a compiler.
+// Deliberately hand-rolled: the dialect is a handful of line types, so a
+// markdown library would be more dependency than parser. Everything is
+// forgiving — unknown lines are skipped rather than throwing, because the
+// person editing curriculum.md is an artist, not a compiler.
+//
+// Inside a drill, a bullet is a tip if it is plain text and a resource if it
+// is a markdown link. That split is what keeps the tracker readable without
+// leaving it: tips are the content, links are the escape hatch.
 
 const RE = {
 	title: /^#\s+(.+)$/,
@@ -16,6 +20,14 @@ const RE = {
 	link: /^\[([^\]]+)\]\(([^)]+)\)$/,
 	phaseBullet: /^(.+?)\s*`(#[0-9a-fA-F]{3,8})`$/,
 	phaseTag: /\{\s*phase\s*:\s*(\d+)\s*\}/,
+	// Marks a "## " section as the toolbox rather than a week. Tagged instead of
+	// matched by name so a fork can call it a cheatsheet, a glossary, whatever —
+	// the heading text becomes the tab label.
+	toolboxTag: /\{\s*toolbox\s*\}/i,
+	// Trailing `32×32` on a drill heading — a display-only canvas-size badge.
+	// Deliberately kept out of the slug so sizes can be retuned without
+	// resetting anyone's checkbox.
+	sizeBadge: /^(.*?)\s*`([^`]+)`\s*$/,
 	// "Week 3 · Title" / "Week 3 — Title" / "Week 3 - Title" → "Title".
 	// Week numbers come from document order, so a stale one here is harmless.
 	weekPrefix: /^week\s+\d+\s*[·—–:-]\s*/i,
@@ -44,11 +56,13 @@ export function parseCurriculum(markdown) {
 	let subtitle = ''
 	const phases = []
 	const weeks = []
+	let toolbox = null
 
-	// Which "## " section we are inside: 'phases' | 'week' | null
+	// Which "## " section we are inside: 'phases' | 'toolbox' | 'week' | null
 	let section = null
 	let week = null
 	let task = null
+	let group = null
 
 	for (const raw of lines) {
 		const line = raw.trim()
@@ -62,6 +76,19 @@ export function parseCurriculum(markdown) {
 				section = 'phases'
 				week = null
 				task = null
+				group = null
+				continue
+			}
+
+			if (RE.toolboxTag.test(label)) {
+				// Later toolbox sections merge into the first, so a fork can split
+				// its cheatsheet across the file without growing a second tab.
+				toolbox = toolbox ?? { title: '', intro: '', groups: [] }
+				toolbox.title = label.replace(RE.toolboxTag, '').trim() || 'Toolbox'
+				section = 'toolbox'
+				week = null
+				task = null
+				group = null
 				continue
 			}
 
@@ -82,15 +109,28 @@ export function parseCurriculum(markdown) {
 			weeks.push(week)
 			section = 'week'
 			task = null
+			group = null
 			continue
 		}
 
 		const h3 = line.match(RE.heading3)
-		if (h3 && week) {
+		if (h3 && section === 'toolbox') {
 			const label = h3[1].trim()
+			group = { id: slugify(label) || `group-${toolbox.groups.length}`, title: label, brief: '', tips: [], resources: [] }
+			toolbox.groups.push(group)
+			continue
+		}
+
+		if (h3 && week) {
+			const heading = h3[1].trim()
+			const badge = heading.match(RE.sizeBadge)
+			const label = badge ? badge[1].trim() : heading
 			task = {
 				id: `${week.id}::${slugify(label) || week.tasks.length}`,
 				label,
+				size: badge ? badge[2].trim() : '',
+				brief: '',
+				tips: [],
 				resources: [],
 			}
 			week.tasks.push(task)
@@ -105,8 +145,13 @@ export function parseCurriculum(markdown) {
 		}
 
 		const quote = line.match(RE.subtitle)
-		if (quote && section === null) {
-			subtitle = quote[1].trim()
+		if (quote) {
+			// Under a drill this is its brief; at the top of the file it is the
+			// document subtitle. Anywhere else it is decoration, and ignored.
+			if (task) task.brief = quote[1].trim()
+			else if (group) group.brief = quote[1].trim()
+			else if (section === 'toolbox') toolbox.intro = quote[1].trim()
+			else if (section === null) subtitle = quote[1].trim()
 			continue
 		}
 
@@ -124,13 +169,18 @@ export function parseCurriculum(markdown) {
 			continue
 		}
 
-		if (task) {
+		// A drill and a toolbox group hold the same two buckets, so the tip /
+		// resource split is decided once here for both.
+		const target = task ?? group
+		if (target) {
 			const link = content.match(RE.link)
-			if (link) task.resources.push({ title: link[1].trim(), url: link[2].trim() })
+			if (link) target.resources.push({ title: link[1].trim(), url: link[2].trim() })
+			else target.tips.push(content)
 		}
 	}
 
-	return { title, subtitle, phases, weeks }
+	// An empty toolbox is the same as no toolbox: the UI hides the tab either way.
+	return { title, subtitle, phases, weeks, toolbox: toolbox?.groups.length ? toolbox : null }
 }
 
 export function phaseFor(curriculum, week) {

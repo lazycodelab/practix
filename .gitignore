@@ -14,4 +14,4 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Exported progress files — these are personal, never commit them.
-12px-progress-*.json
+practix-progress-*.json
